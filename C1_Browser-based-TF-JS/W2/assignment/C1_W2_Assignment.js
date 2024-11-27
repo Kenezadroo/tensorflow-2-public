@@ -15,12 +15,56 @@ function getModel() {
     // HINT: Take a look at the MNIST example.
     model = tf.sequential();
     
-    // YOUR CODE HERE
-    
+    // Adding layers to the model
+    model.add(tf.layers.conv2d({
+        inputShape: [28, 28, 1], // input is a 28x28 grayscale image
+        filters: 32,             // number of filters (feature maps)
+        kernelSize: 3,           // size of the convolution kernel
+        activation: 'relu'       // ReLU activation function for non-linearity
+    }));
+
+    model.add(tf.layers.maxPooling2d({
+        poolSize: [2, 2],        // max pooling layer with 2x2 pool size
+        strides: [2, 2]          // strides of 2 for downsampling
+    }));
+
+    model.add(tf.layers.conv2d({
+        filters: 64,             // number of filters
+        kernelSize: 3,           // kernel size
+        activation: 'relu'       // ReLU activation
+    }));
+
+    model.add(tf.layers.maxPooling2d({
+        poolSize: [2, 2],        // max pooling with 2x2 pool size
+        strides: [2, 2]          // strides of 2
+    }));
+
+    model.add(tf.layers.flatten());  // Flatten the output from 2D to 1D
+
+    model.add(tf.layers.dense({
+        units: 128,              // fully connected layer with 128 units
+        activation: 'relu'       // ReLU activation
+    }));
+
+    model.add(tf.layers.dense({
+        units: 10,               // output layer with 10 units (one for each class)
+        activation: 'softmax'    // softmax activation for multi-class classification
+    }));
+
+    // Compile the model
+    model.compile({
+        loss: 'categoricalCrossentropy',    // loss function for multi-class classification
+        optimizer: tf.train.adam(),         // Adam optimizer
+        metrics: ['acc']                    // track accuracy
+    });
     
     // Compile the model using the categoricalCrossentropy loss,
     // the tf.train.adam() optimizer, and `acc` for your metrics.
-    model.compile(// YOUR CODE HERE);
+    model.compile({
+        loss: 'categoricalCrossentropy',    // loss function for multi-class classification
+        optimizer: tf.train.adam(),         // Adam optimizer
+        metrics: ['acc']                    // track accuracy
+    });
     
     return model;
 }
@@ -28,17 +72,18 @@ function getModel() {
 async function train(model, data) {
         
     // Set the following metrics for the callback: 'loss', 'val_loss', 'acc', 'val_acc'.
-    const metrics = // YOUR CODE HERE    
+    const metrics = ['loss', 'val_loss', 'acc', 'val_acc'];    
 
         
     // Create the container for the callback. Set the name to 'Model Training' and 
     // use a height of 1000px for the styles. 
-    const container = // YOUR CODE HERE   
+    const container = document.getElementById('container');
+    container.style.height = '1000px';   
     
     
     // Use tfvis.show.fitCallbacks() to setup the callbacks. 
     // Use the container and metrics defined above as the parameters.
-    const fitCallbacks = // YOUR CODE HERE
+    const fitCallbacks = tfvis.show.fitCallbacks(container, metrics);
     
     const BATCH_SIZE = 512;
     const TRAIN_DATA_SIZE = 6000;
@@ -47,13 +92,23 @@ async function train(model, data) {
     // Get the training batches and resize them. Remember to put your code
     // inside a tf.tidy() clause to clean up all the intermediate tensors.
     // HINT: Take a look at the MNIST example.
-    const [trainXs, trainYs] = // YOUR CODE HERE
+    const [trainXs, trainYs] = tf.tidy(() => {
+        const d = data.nextTrainBatch(TRAIN_DATA_SIZE);
+        const xs = d.xs.reshape([d.xs.shape[0], 28, 28, 1]);
+        const ys = d.ys;
+        return [xs, ys];
+    });
 
     
     // Get the testing batches and resize them. Remember to put your code
     // inside a tf.tidy() clause to clean up all the intermediate tensors.
     // HINT: Take a look at the MNIST example.
-    const [testXs, testYs] = // YOUR CODE HERE
+    const [testXs, testYs] = tf.tidy(() => {
+        const d = data.nextTestBatch(TEST_DATA_SIZE);
+        const xs = d.xs.reshape([d.xs.shape[0], 28, 28, 1]);
+        const ys = d.ys;
+        return [xs, ys];
+    });
 
     
     return model.fit(trainXs, trainYs, {
